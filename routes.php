@@ -71,4 +71,12 @@ switch ($request_uri) {
         $posController = new PosController();
         $posController->create_invoice();
         break;
+    case '/accounting':
+        $accountingController = new AccountingController();
+        $accountingController->index();
+        break;
+    case '/accounting/expenses/create':
+        $accountingController = new AccountingController();
+        $accountingController->create_expense();
+        break;
 }
