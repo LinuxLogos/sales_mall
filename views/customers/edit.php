@@ -26,9 +26,18 @@
                 <label for="address" class="block text-gray-700">Address</label>
                 <textarea id="address" name="address" class="w-full px-3 py-2 border rounded-lg"><?= $customer['address'] ?></textarea>
             </div>
-            <div class="mb-6">
+            <div class="mb-4">
                 <label for="loyalty_points" class="block text-gray-700">Loyalty Points</label>
                 <input type="number" id="loyalty_points" name="loyalty_points" value="<?= $customer['loyalty_points'] ?>" class="w-full px-3 py-2 border rounded-lg" required>
+            </div>
+            <div class="mb-6">
+                <label for="segment" class="block text-gray-700">Segment</label>
+                <select id="segment" name="segment" class="w-full px-3 py-2 border rounded-lg">
+                    <option value="Regular" <?= $customer['segment'] == 'Regular' ? 'selected' : '' ?>>Regular</option>
+                    <option value="Inactive" <?= $customer['segment'] == 'Inactive' ? 'selected' : '' ?>>Inactive</option>
+                    <option value="VIP" <?= $customer['segment'] == 'VIP' ? 'selected' : '' ?>>VIP</option>
+                    <option value="Strategic Supplier" <?= $customer['segment'] == 'Strategic Supplier' ? 'selected' : '' ?>>Strategic Supplier</option>
+                </select>
             </div>
             <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Update Customer</button>
         </form>

@@ -120,6 +120,31 @@
                 });
             });
 
+            const checkoutBtn = document.getElementById('checkout');
+
+            checkoutBtn.addEventListener('click', () => {
+                const data = {
+                    products: cart,
+                    customer_id: document.getElementById('customer_id').value,
+                    customer_name: document.getElementById('customer_name').value,
+                    customer_email: document.getElementById('customer_email').value,
+                    customer_phone: document.getElementById('customer_phone').value,
+                    total_amount: parseFloat(totalEl.textContent)
+                };
+
+                fetch('/pos/invoice', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    window.location.href = '/pos/receipt/' + result.invoice_id;
+                });
+            });
+
             // GSAP Animations
             gsap.from('.product-card', {
                 duration: 0.5,

@@ -71,6 +71,10 @@ switch ($request_uri) {
         $posController = new PosController();
         $posController->create_invoice();
         break;
+    case (preg_match('/\/pos\/receipt\/(\d+)/', $request_uri, $matches) ? true : false):
+        $posController = new PosController();
+        $posController->receipt($matches[1]);
+        break;
     case '/accounting':
         $accountingController = new AccountingController();
         $accountingController->index();

@@ -14,7 +14,7 @@ class CustomerController {
         $customerModel = new Customer();
         $customerDiscountModel = new CustomerDiscount();
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $customerModel->update($id, $_POST['name'], $_POST['email'], $_POST['phone'], $_POST['address'], $_POST['loyalty_points']);
+            $customerModel->update($id, $_POST['name'], $_POST['email'], $_POST['phone'], $_POST['address'], $_POST['loyalty_points'], $_POST['segment']);
             header('Location: /customers');
         } else {
             $customer = $customerModel->findById($id);

@@ -6,17 +6,37 @@ require_once __DIR__ . '/../models/Store.php';
 
 class AccountingController {
     public function index() {
-        $invoiceModel = new Invoice();
-        // This is a simplified version. A real implementation would filter by date and store.
-        $sales = $invoiceModel->db->query("SELECT SUM(total_amount) as total_sales FROM invoices")->fetch(PDO::FETCH_ASSOC)['total_sales'];
-
-        $expenseModel = new Expense();
-        $expenses = $expenseModel->getAll();
-        $total_expenses = $expenseModel->db->query("SELECT SUM(amount) as total_expenses FROM expenses")->fetch(PDO::FETCH_ASSOC)['total_expenses'];
-
-        $balance = $sales - $total_expenses;
+        $period = $_GET['period'] ?? 'daily'; // daily, weekly, monthly
+        $sales = $this->getSalesByPeriod($period);
+        $expenses = $this->getExpensesByPeriod($period);
+        $total_sales = array_sum(array_column($sales, 'total_sales'));
+        $total_expenses = array_sum(array_column($expenses, 'total_expenses'));
+        $total_taxes = array_sum(array_column($sales, 'total_taxes'));
+        $balance = $total_sales - $total_expenses;
 
         require_once __DIR__ . '/../views/accounting/index.php';
+    }
+
+    private function getSalesByPeriod($period) {
+        $invoiceModel = new Invoice();
+        $group_by = match ($period) {
+            'weekly' => "YEAR(created_at), WEEK(created_at)",
+            'monthly' => "YEAR(created_at), MONTH(created_at)",
+            default => "DATE(created_at)",
+        };
+        $stmt = $invoiceModel->db->query("SELECT DATE(created_at) as date, SUM(total_amount) as total_sales, SUM(tax_amount) as total_taxes FROM invoices GROUP BY $group_by");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function getExpensesByPeriod($period) {
+        $expenseModel = new Expense();
+        $group_by = match ($period) {
+            'weekly' => "YEAR(created_at), WEEK(created_at)",
+            'monthly' => "YEAR(created_at), MONTH(created_at)",
+            default => "DATE(created_at)",
+        };
+        $stmt = $expenseModel->db->query("SELECT DATE(created_at) as date, SUM(amount) as total_expenses FROM expenses GROUP BY $group_by");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function create_expense() {

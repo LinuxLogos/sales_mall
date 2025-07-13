@@ -350,6 +350,7 @@ CREATE TABLE `customers` (
   `phone` varchar(20) DEFAULT NULL,
   `address` text DEFAULT NULL,
   `loyalty_points` int(11) NOT NULL DEFAULT 0,
+  `segment` enum('Regular','Inactive','VIP','Strategic Supplier') DEFAULT 'Regular',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -392,6 +393,8 @@ CREATE TABLE `invoices` (
   `customer_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `total_amount` decimal(10,2) NOT NULL,
+  `tax_rate` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `tax_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
