@@ -28,7 +28,43 @@
             <div class="col-span-5 bg-white p-6 rounded-lg shadow-md">
                 <h2 class="text-2xl font-bold mb-4">Cart</h2>
                 <div id="cart-items" class="mb-4"></div>
-                <div class="text-2xl font-bold">Total: <span id="total">0.00</span> €</div>
+                <div id="summary">
+                    <div class="flex justify-between">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">0.00 €</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Discount:</span>
+                        <span id="discount" class="text-red-500">-0.00 €</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Tax:</span>
+                        <span id="tax">0.00 €</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-2xl mt-2">
+                        <span>Total:</span>
+                        <span id="total">0.00 €</span>
+                    </div>
+                </div>
+                <hr class="my-4">
+                <h2 class="text-2xl font-bold mb-4">Payment</h2>
+                <div id="payment-methods">
+                    <div class="flex items-center mb-2">
+                        <input type="checkbox" id="cash" name="payment_method" value="cash" class="mr-2">
+                        <label for="cash">Cash</label>
+                        <input type="number" placeholder="Amount" class="ml-auto w-24 p-1 border rounded-lg">
+                    </div>
+                    <div class="flex items-center mb-2">
+                        <input type="checkbox" id="card" name="payment_method" value="card" class="mr-2">
+                        <label for="card">Card</label>
+                        <input type="number" placeholder="Amount" class="ml-auto w-24 p-1 border rounded-lg">
+                    </div>
+                    <div class="flex items-center mb-2">
+                        <input type="checkbox" id="mobile_money" name="payment_method" value="mobile_money" class="mr-2">
+                        <label for="mobile_money">Mobile Money</label>
+                        <input type="number" placeholder="Amount" class="ml-auto w-24 p-1 border rounded-lg">
+                    </div>
+                </div>
                 <hr class="my-4">
                 <h2 class="text-2xl font-bold mb-4">Customer</h2>
                 <select id="customer_id" name="customer_id" class="w-full p-2 border rounded-lg mb-4">

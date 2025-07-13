@@ -82,6 +82,12 @@ class PosController {
                 $promotionHistoryModel->create($promotion_id, $invoice_id);
             }
 
+            // Save payments
+            $paymentModel = new Payment();
+            foreach ($data['payments'] as $payment) {
+                $paymentModel->create($invoice_id, $payment['method'], $payment['amount']);
+            }
+
             // Update loyalty points
             $customer = $customerModel->findById($customer_id);
             $new_loyalty_points = $customer['loyalty_points'] + floor($total_amount);

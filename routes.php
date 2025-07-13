@@ -138,4 +138,16 @@ switch ($request_uri) {
         $notificationController = new NotificationController();
         $notificationController->mark_as_read($matches[1]);
         break;
+    case '/stock':
+        $stockController = new StockController();
+        $stockController->index();
+        break;
+    case '/stock/manage':
+        $stockController = new StockController();
+        $stockController->manage();
+        break;
+    case '/stock/transfer':
+        $stockController = new StockController();
+        $stockController->transfer();
+        break;
 }
