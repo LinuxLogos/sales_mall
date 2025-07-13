@@ -1,4 +1,3 @@
 <?php
 
-// Main entry point of the application
-echo "Hello World!";
+require_once __DIR__ . '/config/routes.php';
