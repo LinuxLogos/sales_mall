@@ -36,4 +36,14 @@ class CustomerController {
         $customerDiscountModel->delete($id);
         header('Location: /customers/edit/' . $customer_id);
     }
+
+    public function show($id) {
+        $customerModel = new Customer();
+        $customer = $customerModel->findById($id);
+
+        $invoiceModel = new Invoice();
+        $transactions = $invoiceModel->db->query("SELECT * FROM invoices WHERE customer_id = $id ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+
+        require_once __DIR__ . '/../views/customers/show.php';
+    }
 }
