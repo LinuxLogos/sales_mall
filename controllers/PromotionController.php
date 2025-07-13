@@ -27,4 +27,10 @@ class PromotionController {
             require_once __DIR__ . '/../views/promotions/create.php';
         }
     }
+
+    public function update_status($id, $status) {
+        $promotionModel = new Promotion();
+        $promotionModel->updateStatus($id, $status);
+        header('Location: /promotions');
+    }
 }

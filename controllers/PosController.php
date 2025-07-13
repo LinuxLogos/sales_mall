@@ -57,6 +57,7 @@ class PosController {
                     } else {
                         $total_amount -= $promotion['value'];
                     }
+                    $promotion_id = $promotion['id'];
                 }
             }
 
@@ -73,6 +74,12 @@ class PosController {
             // Create invoice items
             foreach ($products as $product) {
                 $invoiceItemModel->create($invoice_id, $product['id'], $product['quantity'], $product['price']);
+            }
+
+            // Save promotion history
+            if (isset($promotion_id)) {
+                $promotionHistoryModel = new PromotionHistory();
+                $promotionHistoryModel->create($promotion_id, $invoice_id);
             }
 
             // Update loyalty points

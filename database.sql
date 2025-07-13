@@ -545,8 +545,41 @@ CREATE TABLE `promotions` (
   `start_date` datetime DEFAULT NULL,
   `end_date` datetime DEFAULT NULL,
   `applicable_to` enum('product','category','customer') NOT NULL,
-  `applicable_id` int(11) DEFAULT NULL
+  `applicable_id` int(11) DEFAULT NULL,
+  `status` enum('active','inactive','pending') NOT NULL DEFAULT 'pending'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Structure de la table `promotion_history`
+--
+
+CREATE TABLE `promotion_history` (
+  `id` int(11) NOT NULL,
+  `promotion_id` int(11) NOT NULL,
+  `invoice_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Index pour la table `promotion_history`
+--
+ALTER TABLE `promotion_history`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `promotion_id` (`promotion_id`),
+  ADD KEY `invoice_id` (`invoice_id`);
+
+--
+-- AUTO_INCREMENT pour la table `promotion_history`
+--
+ALTER TABLE `promotion_history`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Contraintes pour la table `promotion_history`
+--
+ALTER TABLE `promotion_history`
+  ADD CONSTRAINT `promotion_history_ibfk_1` FOREIGN KEY (`promotion_id`) REFERENCES `promotions` (`id`),
+  ADD CONSTRAINT `promotion_history_ibfk_2` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`);
 
 --
 -- Structure de la table `notifications`

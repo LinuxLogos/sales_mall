@@ -30,8 +30,16 @@ class Promotion {
     }
 
     public function findByCode($code) {
-        $stmt = $this->db->prepare("SELECT * FROM promotions WHERE code = :code AND (start_date IS NULL OR start_date <= NOW()) AND (end_date IS NULL OR end_date >= NOW())");
+        $stmt = $this->db->prepare("SELECT * FROM promotions WHERE code = :code AND status = 'active' AND (start_date IS NULL OR start_date <= NOW()) AND (end_date IS NULL OR end_date >= NOW())");
         $stmt->execute(['code' => $code]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function updateStatus($id, $status) {
+        $stmt = $this->db->prepare("UPDATE promotions SET status = :status WHERE id = :id");
+        return $stmt->execute([
+            'id' => $id,
+            'status' => $status
+        ]);
     }
 }

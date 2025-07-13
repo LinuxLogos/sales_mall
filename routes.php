@@ -119,6 +119,10 @@ switch ($request_uri) {
         $promotionController = new PromotionController();
         $promotionController->create();
         break;
+    case (preg_match('/\/promotions\/update_status\/(\d+)\/(\w+)/', $request_uri, $matches) ? true : false):
+        $promotionController = new PromotionController();
+        $promotionController->update_status($matches[1], $matches[2]);
+        break;
     case '/notifications':
         $notificationController = new NotificationController();
         $notificationController->index();

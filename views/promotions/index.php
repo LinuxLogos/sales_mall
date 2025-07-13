@@ -19,6 +19,8 @@
                     <th class="py-2 px-4 border-b">Applicable To</th>
                     <th class="py-2 px-4 border-b">Start Date</th>
                     <th class="py-2 px-4 border-b">End Date</th>
+                    <th class="py-2 px-4 border-b">Status</th>
+                    <th class="py-2 px-4 border-b">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -30,6 +32,13 @@
                         <td class="py-2 px-4 border-b"><?= $promotion['applicable_to'] ?></td>
                         <td class="py-2 px-4 border-b"><?= $promotion['start_date'] ?></td>
                         <td class="py-2 px-4 border-b"><?= $promotion['end_date'] ?></td>
+                        <td class="py-2 px-4 border-b"><?= $promotion['status'] ?></td>
+                        <td class="py-2 px-4 border-b">
+                            <?php if ($promotion['status'] == 'pending'): ?>
+                                <a href="/promotions/update_status/<?= $promotion['id'] ?>/active" class="text-green-500 hover:underline">Approve</a>
+                                <a href="/promotions/update_status/<?= $promotion['id'] ?>/inactive" class="text-red-500 hover:underline ml-4">Reject</a>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
