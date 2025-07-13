@@ -51,4 +51,27 @@ class AccountingController {
             require_once __DIR__ . '/../views/accounting/create_expense.php';
         }
     }
+
+    public function taxes() {
+        $taxModel = new Tax();
+        $taxes = $taxModel->getAll();
+        require_once __DIR__ . '/../views/accounting/taxes.php';
+    }
+
+    public function create_tax() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $taxModel = new Tax();
+            $taxModel->create($_POST['name'], $_POST['rate'], $_POST['is_default'] ?? 0);
+            header('Location: /accounting/taxes');
+        } else {
+            require_once __DIR__ . '/../views/accounting/create_tax.php';
+        }
+    }
+
+    public function fiscal_report() {
+        $period = $_GET['period'] ?? 'monthly';
+        $sales = $this->getSalesByPeriod($period);
+        $total_taxes = array_sum(array_column($sales, 'total_taxes'));
+        require_once __DIR__ . '/../views/accounting/fiscal_report.php';
+    }
 }

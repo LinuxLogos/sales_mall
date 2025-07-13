@@ -47,7 +47,9 @@ class PosController {
             $total_amount -= $discount_amount;
 
             // Apply taxes
-            $tax_rate = 20.00; // Example tax rate
+            $taxModel = new Tax();
+            $default_tax = $taxModel->getDefault();
+            $tax_rate = $default_tax ? $default_tax['rate'] : 0;
             $tax_amount = ($total_amount * $tax_rate) / 100;
             $total_amount += $tax_amount;
 

@@ -511,6 +511,29 @@ ALTER TABLE `expenses`
   ADD CONSTRAINT `expenses_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 --
+-- Structure de la table `taxes`
+--
+
+CREATE TABLE `taxes` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `rate` decimal(5,2) NOT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Index pour la table `taxes`
+--
+ALTER TABLE `taxes`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- AUTO_INCREMENT pour la table `taxes`
+--
+ALTER TABLE `taxes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- Contraintes pour la table `activity_logs`
 --
 ALTER TABLE `activity_logs`

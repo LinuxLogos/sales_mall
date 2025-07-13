@@ -83,6 +83,18 @@ switch ($request_uri) {
         $accountingController = new AccountingController();
         $accountingController->create_expense();
         break;
+    case '/accounting/taxes':
+        $accountingController = new AccountingController();
+        $accountingController->taxes();
+        break;
+    case '/accounting/taxes/create':
+        $accountingController = new AccountingController();
+        $accountingController->create_tax();
+        break;
+    case '/accounting/fiscal-report':
+        $accountingController = new AccountingController();
+        $accountingController->fiscal_report();
+        break;
     case '/customers':
         $customerController = new CustomerController();
         $customerController->index();
