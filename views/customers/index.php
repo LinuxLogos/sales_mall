@@ -29,7 +29,10 @@
                         <td class="py-2 px-4 border-b"><?= $customer['phone'] ?></td>
                         <td class="py-2 px-4 border-b"><?= $customer['loyalty_points'] ?></td>
                         <td class="py-2 px-4 border-b">
-                            <a href="/customers/edit/<?= $customer['id'] ?>" class="text-blue-500 hover:underline">Edit</a>
+                            <a href="/customers/show/<?= $customer['id'] ?>" class="text-blue-500 hover:underline">View</a>
+                            <a href="/customers/edit/<?= $customer['id'] ?>" class="text-green-500 hover:underline ml-4">Edit</a>
+                            <a href="mailto:<?= $customer['email'] ?>" class="text-yellow-500 hover:underline ml-4">Email</a>
+                            <a href="tel:<?= $customer['phone'] ?>" class="text-purple-500 hover:underline ml-4">Call</a>
                         </td>
                     </tr>
                 <?php endforeach; ?>

@@ -118,6 +118,10 @@ switch ($request_uri) {
         $customerController = new CustomerController();
         $customerController->edit($matches[1]);
         break;
+    case (preg_match('/\/customers\/show\/(\d+)/', $request_uri, $matches) ? true : false):
+        $customerController = new CustomerController();
+        $customerController->show($matches[1]);
+        break;
     case (preg_match('/\/customers\/(\d+)\/discounts\/create/', $request_uri, $matches) ? true : false):
         $customerController = new CustomerController();
         $customerController->create_discount($matches[1]);
