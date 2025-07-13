@@ -38,6 +38,7 @@ class PosController {
                 $total_amount += $product['price'] * $product['quantity'];
             }
 
+            // Apply customer-specific discounts
             $discounts = $customerDiscountModel->getByCustomerId($customer_id);
             $discount_percentage = 0;
             foreach ($discounts as $discount) {
@@ -45,6 +46,19 @@ class PosController {
             }
             $discount_amount = ($total_amount * $discount_percentage) / 100;
             $total_amount -= $discount_amount;
+
+            // Apply promotion code
+            if (!empty($data['promotion_code'])) {
+                $promotionModel = new Promotion();
+                $promotion = $promotionModel->findByCode($data['promotion_code']);
+                if ($promotion) {
+                    if ($promotion['type'] == 'percentage') {
+                        $total_amount -= ($total_amount * $promotion['value']) / 100;
+                    } else {
+                        $total_amount -= $promotion['value'];
+                    }
+                }
+            }
 
             // Apply taxes
             $taxModel = new Tax();

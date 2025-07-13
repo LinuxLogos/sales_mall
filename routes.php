@@ -111,4 +111,20 @@ switch ($request_uri) {
         $customerController = new CustomerController();
         $customerController->delete_discount($matches[2], $matches[1]);
         break;
+    case '/promotions':
+        $promotionController = new PromotionController();
+        $promotionController->index();
+        break;
+    case '/promotions/create':
+        $promotionController = new PromotionController();
+        $promotionController->create();
+        break;
+    case '/notifications':
+        $notificationController = new NotificationController();
+        $notificationController->index();
+        break;
+    case (preg_match('/\/notifications\/mark_as_read\/(\d+)/', $request_uri, $matches) ? true : false):
+        $notificationController = new NotificationController();
+        $notificationController->mark_as_read($matches[1]);
+        break;
 }
