@@ -162,4 +162,8 @@ switch ($request_uri) {
         $stockController = new StockController();
         $stockController->transfer();
         break;
+    case '/stats':
+        $statsController = new StatsController();
+        $statsController->index();
+        break;
 }
