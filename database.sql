@@ -349,8 +349,39 @@ CREATE TABLE `customers` (
   `email` varchar(255) DEFAULT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `address` text DEFAULT NULL,
+  `loyalty_points` int(11) NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Structure de la table `customer_discounts`
+--
+
+CREATE TABLE `customer_discounts` (
+  `id` int(11) NOT NULL,
+  `customer_id` int(11) NOT NULL,
+  `discount_percentage` decimal(5,2) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Index pour la table `customer_discounts`
+--
+ALTER TABLE `customer_discounts`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `customer_id` (`customer_id`);
+
+--
+-- AUTO_INCREMENT pour la table `customer_discounts`
+--
+ALTER TABLE `customer_discounts`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Contraintes pour la table `customer_discounts`
+--
+ALTER TABLE `customer_discounts`
+  ADD CONSTRAINT `customer_discounts_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`);
 
 --
 -- Structure de la table `invoices`

@@ -79,4 +79,20 @@ switch ($request_uri) {
         $accountingController = new AccountingController();
         $accountingController->create_expense();
         break;
+    case '/customers':
+        $customerController = new CustomerController();
+        $customerController->index();
+        break;
+    case (preg_match('/\/customers\/edit\/(\d+)/', $request_uri, $matches) ? true : false):
+        $customerController = new CustomerController();
+        $customerController->edit($matches[1]);
+        break;
+    case (preg_match('/\/customers\/(\d+)\/discounts\/create/', $request_uri, $matches) ? true : false):
+        $customerController = new CustomerController();
+        $customerController->create_discount($matches[1]);
+        break;
+    case (preg_match('/\/customers\/(\d+)\/discounts\/delete\/(\d+)/', $request_uri, $matches) ? true : false):
+        $customerController = new CustomerController();
+        $customerController->delete_discount($matches[2], $matches[1]);
+        break;
 }

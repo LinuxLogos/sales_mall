@@ -31,14 +31,15 @@ class Customer {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function update($id, $name, $email, $phone, $address) {
-        $stmt = $this->db->prepare("UPDATE customers SET name = :name, email = :email, phone = :phone, address = :address WHERE id = :id");
+    public function update($id, $name, $email, $phone, $address, $loyalty_points) {
+        $stmt = $this->db->prepare("UPDATE customers SET name = :name, email = :email, phone = :phone, address = :address, loyalty_points = :loyalty_points WHERE id = :id");
         return $stmt->execute([
             'id' => $id,
             'name' => $name,
             'email' => $email,
             'phone' => $phone,
-            'address' => $address
+            'address' => $address,
+            'loyalty_points' => $loyalty_points
         ]);
     }
 
