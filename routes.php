@@ -17,6 +17,14 @@ switch ($request_uri) {
         $authController = new AuthController();
         $authController->logout();
         break;
+    case '/forgot-password':
+        $authController = new AuthController();
+        $authController->forgot_password();
+        break;
+    case (preg_match('/\/reset-password\/(\w+)/', $request_uri, $matches) ? true : false):
+        $authController = new AuthController();
+        $authController->reset_password($matches[1]);
+        break;
     case '/dashboard':
         // Protected route - check for session
         session_start();

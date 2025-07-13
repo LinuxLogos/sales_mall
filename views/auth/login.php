@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body class="bg-gray-100">
     <div class="flex items-center justify-center min-h-screen">
-        <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <div class="form-container bg-white p-8 rounded-lg shadow-md w-full max-w-md">
             <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
             <form action="/login" method="POST">
                 <div class="mb-4">
@@ -21,7 +22,18 @@
                 </div>
                 <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Login</button>
             </form>
+            <p class="text-center mt-4">
+                <a href="/forgot-password" class="text-sm text-blue-500 hover:underline">Forgot Password?</a>
+            </p>
         </div>
     </div>
+    <script>
+        gsap.from(".form-container", {
+            duration: 1,
+            y: -50,
+            opacity: 0,
+            ease: "power2.out"
+        });
+    </script>
 </body>
 </html>

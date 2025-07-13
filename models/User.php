@@ -26,4 +26,19 @@ class User {
             'role_id' => $role_id
         ]);
     }
+
+    public function findByEmail($email) {
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE email = :email");
+        $stmt->execute(['email' => $email]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function updatePassword($email, $password) {
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        $stmt = $this->db->prepare("UPDATE users SET password = :password WHERE email = :email");
+        return $stmt->execute([
+            'password' => $hashed_password,
+            'email' => $email
+        ]);
+    }
 }
