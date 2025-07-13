@@ -26,11 +26,10 @@ switch ($request_uri) {
         $authController->reset_password($matches[1]);
         break;
     case '/dashboard':
-        // Protected route - check for session
         session_start();
         if (isset($_SESSION['user_id'])) {
-            // For now, just a placeholder
-            echo "Welcome to the dashboard!";
+            $dashboardController = new DashboardController();
+            $dashboardController->index();
         } else {
             header('Location: /login');
         }
