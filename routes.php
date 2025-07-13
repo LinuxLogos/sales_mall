@@ -31,4 +31,20 @@ switch ($request_uri) {
         // Redirect to login
         header('Location: /login');
         break;
+    case '/stores':
+        $storeController = new StoreController();
+        $storeController->index();
+        break;
+    case '/stores/create':
+        $storeController = new StoreController();
+        $storeController->create();
+        break;
+    case (preg_match('/\/stores\/edit\/(\d+)/', $request_uri, $matches) ? true : false):
+        $storeController = new StoreController();
+        $storeController->edit($matches[1]);
+        break;
+    case (preg_match('/\/stores\/delete\/(\d+)/', $request_uri, $matches) ? true : false):
+        $storeController = new StoreController();
+        $storeController->delete($matches[1]);
+        break;
 }
