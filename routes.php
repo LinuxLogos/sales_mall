@@ -63,4 +63,12 @@ switch ($request_uri) {
         $productController = new ProductController();
         $productController->delete($matches[1]);
         break;
+    case '/pos':
+        $posController = new PosController();
+        $posController->index();
+        break;
+    case '/pos/invoice':
+        $posController = new PosController();
+        $posController->create_invoice();
+        break;
 }
