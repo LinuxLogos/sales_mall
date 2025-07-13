@@ -47,4 +47,20 @@ switch ($request_uri) {
         $storeController = new StoreController();
         $storeController->delete($matches[1]);
         break;
+    case '/products':
+        $productController = new ProductController();
+        $productController->index();
+        break;
+    case '/products/create':
+        $productController = new ProductController();
+        $productController->create();
+        break;
+    case (preg_match('/\/products\/edit\/(\d+)/', $request_uri, $matches) ? true : false):
+        $productController = new ProductController();
+        $productController->edit($matches[1]);
+        break;
+    case (preg_match('/\/products\/delete\/(\d+)/', $request_uri, $matches) ? true : false):
+        $productController = new ProductController();
+        $productController->delete($matches[1]);
+        break;
 }

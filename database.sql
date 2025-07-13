@@ -208,6 +208,138 @@ ALTER TABLE `users`
   ADD CONSTRAINT `users_ibfk_2` FOREIGN KEY (`store_id`) REFERENCES `stores` (`id`);
 
 --
+-- Structure de la table `categories`
+--
+
+CREATE TABLE `categories` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Structure de la table `units`
+--
+
+CREATE TABLE `units` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `abbreviation` varchar(10) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Structure de la table `variants`
+--
+
+CREATE TABLE `variants` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Structure de la table `products`
+--
+
+CREATE TABLE `products` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `purchase_price` decimal(10,2) NOT NULL,
+  `sale_price` decimal(10,2) NOT NULL,
+  `stock_threshold` int(11) NOT NULL,
+  `category_id` int(11) DEFAULT NULL,
+  `unit_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Structure de la table `product_variants`
+--
+
+CREATE TABLE `product_variants` (
+  `product_id` int(11) NOT NULL,
+  `variant_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Index pour la table `categories`
+--
+ALTER TABLE `categories`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Index pour la table `units`
+--
+ALTER TABLE `units`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Index pour la table `variants`
+--
+ALTER TABLE `variants`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Index pour la table `products`
+--
+ALTER TABLE `products`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `category_id` (`category_id`),
+  ADD KEY `unit_id` (`unit_id`);
+
+--
+-- Index pour la table `product_variants`
+--
+ALTER TABLE `product_variants`
+  ADD PRIMARY KEY (`product_id`,`variant_id`),
+  ADD KEY `variant_id` (`variant_id`);
+
+--
+-- AUTO_INCREMENT pour les tables déchargées
+--
+
+--
+-- AUTO_INCREMENT pour la table `categories`
+--
+ALTER TABLE `categories`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `units`
+--
+ALTER TABLE `units`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `variants`
+--
+ALTER TABLE `variants`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `products`
+--
+ALTER TABLE `products`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Contraintes pour les tables déchargées
+--
+
+--
+-- Contraintes pour la table `products`
+--
+ALTER TABLE `products`
+  ADD CONSTRAINT `products_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`),
+  ADD CONSTRAINT `products_ibfk_2` FOREIGN KEY (`unit_id`) REFERENCES `units` (`id`);
+
+--
+-- Contraintes pour la table `product_variants`
+--
+ALTER TABLE `product_variants`
+  ADD CONSTRAINT `product_variants_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`),
+  ADD CONSTRAINT `product_variants_ibfk_2` FOREIGN KEY (`variant_id`) REFERENCES `variants` (`id`);
+
+--
 -- Contraintes pour la table `activity_logs`
 --
 ALTER TABLE `activity_logs`
