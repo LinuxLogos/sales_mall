@@ -9,10 +9,16 @@
 <body class="bg-gray-100">
     <div class="container mx-auto mt-8">
         <h1 class="text-3xl font-bold mb-6">Accounting</h1>
-        <div class="flex space-x-4 mb-6">
-            <a href="?period=daily" class="py-2 px-4 rounded-lg <?= ($_GET['period'] ?? 'daily') == 'daily' ? 'bg-blue-500 text-white' : 'bg-white' ?>">Daily</a>
-            <a href="?period=weekly" class="py-2 px-4 rounded-lg <?= ($_GET['period'] ?? '') == 'weekly' ? 'bg-blue-500 text-white' : 'bg-white' ?>">Weekly</a>
-            <a href="?period=monthly" class="py-2 px-4 rounded-lg <?= ($_GET['period'] ?? '') == 'monthly' ? 'bg-blue-500 text-white' : 'bg-white' ?>">Monthly</a>
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex space-x-4">
+                <a href="?period=daily" class="py-2 px-4 rounded-lg <?= ($_GET['period'] ?? 'daily') == 'daily' ? 'bg-blue-500 text-white' : 'bg-white' ?>">Daily</a>
+                <a href="?period=weekly" class="py-2 px-4 rounded-lg <?= ($_GET['period'] ?? '') == 'weekly' ? 'bg-blue-500 text-white' : 'bg-white' ?>">Weekly</a>
+                <a href="?period=monthly" class="py-2 px-4 rounded-lg <?= ($_GET['period'] ?? '') == 'monthly' ? 'bg-blue-500 text-white' : 'bg-white' ?>">Monthly</a>
+            </div>
+            <div class="space-x-4">
+                <a href="/accounting/export/csv?period=<?= $_GET['period'] ?? 'daily' ?>" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600">Export CSV</a>
+                <a href="/accounting/export/pdf?period=<?= $_GET['period'] ?? 'daily' ?>" class="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600">Export PDF</a>
+            </div>
         </div>
         <div class="grid grid-cols-4 gap-8">
             <div class="bg-white p-6 rounded-lg shadow-md">

@@ -102,6 +102,14 @@ switch ($request_uri) {
         $accountingController = new AccountingController();
         $accountingController->fiscal_report();
         break;
+    case '/accounting/revenues/create':
+        $accountingController = new AccountingController();
+        $accountingController->create_revenue();
+        break;
+    case (preg_match('/\/accounting\/export\/(csv|pdf)/', $request_uri, $matches) ? true : false):
+        $accountingController = new AccountingController();
+        $accountingController->export($matches[1]);
+        break;
     case '/customers':
         $customerController = new CustomerController();
         $customerController->index();

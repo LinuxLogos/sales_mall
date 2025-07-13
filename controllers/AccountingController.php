@@ -74,4 +74,40 @@ class AccountingController {
         $total_taxes = array_sum(array_column($sales, 'total_taxes'));
         require_once __DIR__ . '/../views/accounting/fiscal_report.php';
     }
+
+    public function create_revenue() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            session_start();
+            $revenueModel = new Revenue();
+            $revenueModel->create($_POST['description'], $_POST['amount'], $_POST['store_id'], $_SESSION['user_id']);
+            header('Location: /accounting');
+        } else {
+            $storeModel = new Store();
+            $stores = $storeModel->getAll();
+            require_once __DIR__ . '/../views/accounting/create_revenue.php';
+        }
+    }
+
+    public function export($format) {
+        $period = $_GET['period'] ?? 'daily';
+        $sales = $this->getSalesByPeriod($period);
+        $expenses = $this->getExpensesByPeriod($period);
+
+        if ($format == 'csv') {
+            header('Content-Type: text/csv');
+            header('Content-Disposition: attachment; filename="accounting_report.csv"');
+            $output = fopen('php://output', 'w');
+            fputcsv($output, ['Date', 'Sales', 'Taxes', 'Expenses']);
+            // This is a simplified export. A real implementation would merge sales and expenses by date.
+            foreach ($sales as $sale) {
+                fputcsv($output, [$sale['date'], $sale['total_sales'], $sale['total_taxes'], 0]);
+            }
+            foreach ($expenses as $expense) {
+                fputcsv($output, [$expense['date'], 0, 0, $expense['total_expenses']]);
+            }
+            fclose($output);
+        } else { // pdf via printable html
+            require_once __DIR__ . '/../views/accounting/report_printable.php';
+        }
+    }
 }
