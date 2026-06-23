@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WMS - Warehouse Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/framer-motion/10.16.4/framer-motion.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/lucide.min.js"></script>
+  <style>
+    :root {
+      --primary-green: #1A312C;
+      --alert-red: #7A1E1E;
+    }
+    body {
+      background-color: #F9FAFB;
+      font-family: 'Inter', sans-serif;
+    }
+    .bg-primary { background-color: var(--primary-green); }
+    .text-primary { color: var(--primary-green); }
+    .border-primary { border-color: var(--primary-green); }
+    .bg-alert { background-color: var(--alert-red); }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="w-64 bg-primary text-white flex-shrink-0 hidden md:flex flex-col">
+    <div class="p-6 text-2xl font-bold border-b border-gray-700 flex items-center">
+      <span class="mr-2">📦</span> WMS
+    </div>
+    <nav class="flex-grow p-4 space-y-2 overflow-y-auto">
+      <a href="#" onclick="showModule('dashboard')" class="flex items-center p-3 rounded hover:bg-gray-700 transition">
+        <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Dashboard
+      </a>
+      <a href="#" onclick="showModule('pos')" class="flex items-center p-3 rounded hover:bg-gray-700 transition">
+        <i data-lucide="shopping-cart" class="w-5 h-5 mr-3"></i> Vente (POS)
+      </a>
+      <a href="#" onclick="showModule('stock')" class="flex items-center p-3 rounded hover:bg-gray-700 transition">
+        <i data-lucide="package" class="w-5 h-5 mr-3"></i> Stock
+      </a>
+      <a href="#" onclick="showModule('inventory')" class="flex items-center p-3 rounded hover:bg-gray-700 transition">
+        <i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Inventaire
+      </a>
+      <a href="#" onclick="showModule('accounting')" class="flex items-center p-3 rounded hover:bg-gray-700 transition">
+        <i data-lucide="pie-chart" class="w-5 h-5 mr-3"></i> Comptabilité
+      </a>
+      <a href="#" onclick="showModule('marketing')" class="flex items-center p-3 rounded hover:bg-gray-700 transition">
+        <i data-lucide="trending-up" class="w-5 h-5 mr-3"></i> Marketing
+      </a>
+      <a href="#" onclick="showModule('admin')" class="flex items-center p-3 rounded hover:bg-gray-700 transition">
+        <i data-lucide="settings" class="w-5 h-5 mr-3"></i> Admin
+      </a>
+    </nav>
+    <div class="p-4 border-t border-gray-700">
+      <button onclick="logout()" class="w-full flex items-center p-3 rounded hover:bg-alert transition">
+        <i data-lucide="log-out" class="w-5 h-5 mr-3"></i> Déconnexion
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-grow flex flex-col h-full relative">
+    <!-- Header -->
+    <header class="bg-white shadow-sm p-4 flex justify-between items-center">
+      <div class="flex items-center">
+        <button class="md:hidden mr-4"><i data-lucide="menu"></i></button>
+        <h2 id="module-title" class="text-xl font-semibold text-gray-800">Dashboard</h2>
+      </div>
+      <div class="flex items-center space-y-4">
+        <div id="user-info" class="text-sm text-gray-600 mr-4">
+          <span id="username-display" class="font-medium">Chargement...</span>
+        </div>
+        <div class="relative">
+          <i data-lucide="bell" class="w-6 h-6 text-gray-500 cursor-pointer"></i>
+          <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div id="content" class="p-6 overflow-y-auto flex-grow">
+      <!-- Loading state -->
+      <div id="loader" class="flex flex-col items-center justify-center h-full">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p class="mt-4 text-gray-500">Initialisation du système...</p>
+      </div>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+  </main>
+
+  <!-- Modals -->
+  <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden flex items-center justify-center">
+    <div id="modal-content" class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+      <!-- Modal dynamic content -->
+    </div>
+  </div>
+
+  <script>
+    // App State
+    let state = {
+      user: null,
+      token: null,
+      currentModule: 'dashboard',
+      catalogue: [],
+      settings: {}
+    };
+
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    /**
+     * Module Router
+     */
+    function showModule(moduleName) {
+      state.currentModule = moduleName;
+      document.getElementById('module-title').innerText = moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+
+      const content = document.getElementById('content');
+      content.innerHTML = '<div class="flex justify-center p-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>';
+
+      switch(moduleName) {
+        case 'dashboard': renderDashboard(); break;
+        case 'pos': renderPOS(); break;
+        case 'stock': renderStock(); break;
+        case 'inventory': renderInventory(); break;
+        case 'accounting': renderAccounting(); break;
+        case 'marketing': renderMarketing(); break;
+        case 'admin': renderAdmin(); break;
+      }
+      lucide.createIcons();
+    }
+
+    /**
+     * Dashboard Logic
+     */
+    async function renderDashboard() {
+      const data = await callServer('DashboardService', 'getData');
+      const content = document.getElementById('content');
+      content.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div class="bg-white p-6 rounded shadow-sm border-t-4 border-green-500">
+            <div class="text-gray-500 text-sm">Chiffre d'Affaires (Jour)</div>
+            <div class="text-2xl font-bold">${data.kpis.ca.toFixed(2)} ${state.settings.currency || 'XOF'}</div>
+          </div>
+          <div class="bg-white p-6 rounded shadow-sm border-t-4 border-blue-500">
+            <div class="text-gray-500 text-sm">TVA Collectée</div>
+            <div class="text-2xl font-bold">${data.kpis.tva.toFixed(2)}</div>
+          </div>
+          <div class="bg-white p-6 rounded shadow-sm border-t-4 border-red-500">
+            <div class="text-gray-500 text-sm">Alertes Stock</div>
+            <div class="text-2xl font-bold">${data.lowStock.length}</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white p-6 rounded shadow-sm">
+            <h3 class="font-bold mb-4">Ventes Récentes</h3>
+            <div class="space-y-4">
+              ${data.recentSales.map(s => `
+                <div class="flex justify-between items-center text-sm">
+                  <span>${s.ticket_id}</span>
+                  <span class="font-bold">${s.total_ttc}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded shadow-sm">
+             <h3 class="font-bold mb-4">Top Produits</h3>
+             <div class="space-y-4">
+               ${data.topProducts.map(p => `
+                 <div class="flex justify-between items-center text-sm">
+                   <span>${p.designation}</span>
+                   <span class="bg-primary text-white px-2 py-1 rounded text-xs">${p.score.toFixed(1)}</span>
+                 </div>
+               `).join('')}
+             </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function renderAdmin() {
+      const content = document.getElementById('content');
+      content.innerHTML = `
+        <div class="max-w-2xl bg-white p-6 rounded shadow-sm">
+          <h3 class="font-bold mb-6">Paramètres de l'Entreprise</h3>
+          <form onsubmit="saveSettings(event)" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Nom de l'entreprise</label>
+              <input type="text" id="set-company" class="w-full p-2 border rounded" value="${state.settings.company_name || ''}">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Adresse</label>
+              <input type="text" id="set-address" class="w-full p-2 border rounded" value="${state.settings.address || ''}">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1">NIF</label>
+                <input type="text" id="set-nif" class="w-full p-2 border rounded" value="${state.settings.nif || ''}">
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">RCCM</label>
+                <input type="text" id="set-rccm" class="w-full p-2 border rounded" value="${state.settings.rccm || ''}">
+              </div>
+            </div>
+            <button type="submit" class="bg-primary text-white px-6 py-2 rounded">Enregistrer</button>
+          </form>
+        </div>
+      `;
+    }
+
+    async function saveSettings(e) {
+      e.preventDefault();
+      const settings = {
+        company_name: document.getElementById('set-company').value,
+        address: document.getElementById('set-address').value,
+        nif: document.getElementById('set-nif').value,
+        rccm: document.getElementById('set-rccm').value
+      };
+      await callServer('SettingsService', 'saveBatch', settings);
+      state.settings = { ...state.settings, ...settings };
+      showToast('Paramètres enregistrés');
+    }
+
+    async function renderInventory() {
+       // Placeholder
+       document.getElementById('content').innerHTML = '<div class="p-12 text-center text-gray-500">Module Inventaire - En développement</div>';
+    }
+
+    /**
+     * POS Module Logic
+     */
+    let cart = [];
+    async function renderPOS() {
+      const content = document.getElementById('content');
+      content.innerHTML = `
+        <div class="flex h-full gap-6">
+          <!-- Left: Product Selection -->
+          <div class="flex-grow flex flex-col gap-4">
+            <div class="bg-white p-4 rounded shadow-sm flex gap-4">
+              <input type="text" id="pos-search" placeholder="Scanner ou chercher un produit..." class="flex-grow p-3 border rounded">
+              <button onclick="handlePosSearch()" class="bg-primary text-white px-6 rounded"><i data-lucide="search"></i></button>
+            </div>
+            <div id="pos-products" class="flex-grow grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto">
+              <!-- Search results here -->
+            </div>
+          </div>
+          <!-- Right: Cart & Payment -->
+          <div class="w-96 bg-white rounded shadow-md flex flex-col">
+            <div class="p-4 border-b font-bold text-lg flex justify-between">
+              Panier <button onclick="clearCart()" class="text-alert text-sm font-normal">Vider</button>
+            </div>
+            <div id="cart-items" class="flex-grow overflow-y-auto p-4 space-y-3">
+              <!-- Cart items here -->
+            </div>
+            <div class="p-4 border-t space-y-2 bg-gray-50">
+              <div class="flex justify-between"><span>HT</span><span id="pos-total-ht">0.00</span></div>
+              <div class="flex justify-between"><span>TVA</span><span id="pos-total-tva">0.00</span></div>
+              <div class="flex justify-between text-xl font-bold"><span>Total TTC</span><span id="pos-total-ttc">0.00</span></div>
+              <button onclick="checkout()" class="w-full bg-green-600 text-white p-4 rounded-lg font-bold text-lg mt-4 shadow-lg hover:bg-green-700">
+                ENCAISSER
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+      loadCatalogue();
+    }
+
+    async function loadCatalogue() {
+      if (state.catalogue.length === 0) {
+        state.catalogue = await callServer('ProductService', 'getAll');
+      }
+      displayProducts(state.catalogue);
+    }
+
+    function displayProducts(products) {
+      const list = document.getElementById('pos-products');
+      list.innerHTML = products.map(p => `
+        <div onclick="addToCart('${p.SKU}')" class="bg-white p-4 rounded border hover:border-primary cursor-pointer transition shadow-sm">
+          <div class="text-xs text-gray-500">${p.SKU}</div>
+          <div class="font-bold truncate">${p.designation}</div>
+          <div class="text-primary font-bold mt-2">${p.sale_price} ${state.settings.currency || 'XOF'}</div>
+        </div>
+      `).join('');
+    }
+
+    /**
+     * Accounting & Marketing BI logic
+     */
+    async function renderAccounting() {
+      const data = await callServer('AccountingService', 'getProductPerformance');
+      const content = document.getElementById('content');
+      content.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white p-6 rounded shadow-sm">
+            <h3 class="font-bold mb-4">Top Performance (Score d'Attractivité)</h3>
+            <div class="space-y-4">
+              ${data.slice(0, 5).map(p => `
+                <div class="flex items-center justify-between border-b pb-2">
+                  <span>${p.designation}</span>
+                  <span class="font-bold text-primary">${p.score.toFixed(1)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded shadow-sm">
+            <h3 class="font-bold mb-4">Distribution Matricielle BCG</h3>
+            <div class="space-y-2 text-sm">
+              <div class="p-3 bg-green-100 text-green-800 rounded">STARS: Priorité réapprovisionnement</div>
+              <div class="p-3 bg-blue-100 text-blue-800 rounded">OPTIMISER: Améliorer visibilité</div>
+              <div class="p-3 bg-yellow-100 text-yellow-800 rounded">SÉCURISER: Négocier volume</div>
+              <div class="p-3 bg-red-100 text-red-800 rounded">POIDS MORTS: Déstockage immédiat</div>
+            </div>
+          </div>
+          <div class="lg:col-span-2 bg-white rounded shadow-sm overflow-hidden">
+            <table class="w-full text-left">
+              <thead class="bg-gray-100 text-xs uppercase">
+                <tr><th class="p-4">SKU</th><th class="p-4">Produit</th><th class="p-4">Score</th><th class="p-4">Segment Marketing</th></tr>
+              </thead>
+              <tbody class="divide-y">
+                ${data.map(p => `
+                  <tr>
+                    <td class="p-4">${p.SKU}</td>
+                    <td class="p-4 font-medium">${p.designation}</td>
+                    <td class="p-4">${p.score.toFixed(1)}</td>
+                    <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-bold ${p.score > 75 ? 'bg-green-100 text-green-800' : p.score < 25 ? 'bg-red-100 text-red-800' : 'bg-gray-100'}">${p.segment}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    async function renderMarketing() {
+      const suggestions = await callServer('MarketingService', 'getSuggestions');
+      const content = document.getElementById('content');
+      content.innerHTML = `
+        <div class="space-y-6">
+          <div class="bg-white p-6 rounded shadow-sm border-l-4 border-primary">
+            <h3 class="font-bold text-lg mb-2">Opportunités "STARS" 🌟</h3>
+            <p class="text-sm text-gray-600 mb-4">Ces produits génèrent la meilleure marge et tournent vite. Accentuez la vente !</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              ${suggestions.toPromote.map(p => `<div class="p-3 border rounded font-medium">${p.designation}</div>`).join('')}
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded shadow-sm border-l-4 border-alert">
+            <h3 class="font-bold text-lg mb-2">Alertes "POIDS MORTS" 📉</h3>
+            <p class="text-sm text-gray-600 mb-4">Ces produits immobilisent du cash. Prévoyez une opération de déstockage.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              ${suggestions.toLiquidity.map(p => `<div class="p-3 border rounded font-medium text-alert">${p.designation}</div>`).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function addToCart(sku) {
+      const product = state.catalogue.find(p => p.SKU === sku);
+      const existing = cart.find(item => item.SKU === sku);
+      if (existing) {
+        existing.quantity++;
+      } else {
+        cart.push({ ...product, quantity: 1, tva_rate: 18 });
+      }
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const list = document.getElementById('cart-items');
+      list.innerHTML = cart.map((item, idx) => `
+        <div class="flex justify-between items-center border-b pb-2">
+          <div class="flex-grow">
+            <div class="font-medium text-sm truncate">${item.designation}</div>
+            <div class="text-xs text-gray-500">${item.quantity} x ${item.sale_price}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="changeQty(${idx}, -1)" class="w-6 h-6 border rounded">-</button>
+            <span class="w-6 text-center text-sm">${item.quantity}</span>
+            <button onclick="changeQty(${idx}, 1)" class="w-6 h-6 border rounded">+</button>
+          </div>
+        </div>
+      `).join('');
+
+      let ht = cart.reduce((sum, item) => sum + (item.quantity * item.sale_price), 0);
+      let tva = ht * 0.18;
+      document.getElementById('pos-total-ht').innerText = ht.toFixed(2);
+      document.getElementById('pos-total-tva').innerText = tva.toFixed(2);
+      document.getElementById('pos-total-ttc').innerText = (ht + tva).toFixed(2);
+    }
+
+    function changeQty(idx, delta) {
+      cart[idx].quantity += delta;
+      if (cart[idx].quantity <= 0) cart.splice(idx, 1);
+      updateCartUI();
+    }
+
+    async function checkout() {
+      if (cart.length === 0) return;
+      try {
+        const ticketId = await callServer('SalesService', 'processSale', {
+          site: 'SITE1', // From state
+          caisse: 'C01', // From state
+          userId: state.user.id,
+          items: cart.map(i => ({
+            SKU: i.SKU,
+            quantity: i.quantity,
+            unit_price: i.sale_price,
+            tva_rate: i.tva_rate
+          })),
+          paymentMethod: 'ESPECE'
+        });
+        showToast(`Vente réussie: ${ticketId}`);
+        cart = [];
+        updateCartUI();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    /**
+     * Stock Module Logic
+     */
+    async function renderStock() {
+      const content = document.getElementById('content');
+      content.innerHTML = `
+        <div class="bg-white rounded shadow-sm overflow-hidden">
+          <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+            <h3 class="font-bold">Gestion des Stocks Physiques</h3>
+            <button onclick="openAddProductModal()" class="bg-primary text-white px-4 py-2 rounded text-sm">+ Nouveau Produit</button>
+          </div>
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-gray-100 text-xs uppercase text-gray-600">
+              <tr>
+                <th class="p-4">SKU / Produit</th>
+                <th class="p-4">Localisation</th>
+                <th class="p-4">Physique</th>
+                <th class="p-4">Réservé</th>
+                <th class="p-4">Disponible</th>
+                <th class="p-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="stock-table-body" class="divide-y text-sm">
+              <!-- Stock rows here -->
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      const stocks = await callServer('StockService', 'getSiteStockList', 'SITE1');
+      const tableBody = document.getElementById('stock-table-body');
+      tableBody.innerHTML = stocks.map(s => `
+        <tr>
+          <td class="p-4">
+            <div class="font-bold">${s.SKU}</div>
+            <div class="text-xs text-gray-500">${s.SKU}</div>
+          </td>
+          <td class="p-4 text-xs">
+            <span class="bg-gray-200 px-2 py-1 rounded font-mono">${s.allee}-${s.colonne}-${s.etagere}</span>
+          </td>
+          <td class="p-4 font-semibold">${s.physical_stock}</td>
+          <td class="p-4 text-orange-600">${s.reserved_stock}</td>
+          <td class="p-4 font-bold text-green-700">${s.available_stock}</td>
+          <td class="p-4">
+            <button class="text-blue-600 hover:underline">Ajuster</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    /**
+     * API Wrapper
+     */
+    function callServer(service, method, ...args) {
+      return new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject)
+          .api(state.token, service, method, ...args);
+      });
+    }
+
+    /**
+     * UI Helpers
+     */
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `p-4 rounded shadow-lg text-white transform transition-all duration-300 translate-x-full ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+      toast.innerText = message;
+      container.appendChild(toast);
+
+      setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+      setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Start Login flow if no session
+    window.onload = () => {
+      renderLogin();
+    };
+
+    function renderLogin() {
+       document.body.innerHTML = `
+        <div class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+          <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+            <div class="text-center mb-8">
+              <h1 class="text-3xl font-bold text-primary">WMS</h1>
+              <p class="text-gray-500">Connectez-vous à votre espace</p>
+            </div>
+            <form id="login-form" onsubmit="handleLogin(event)">
+              <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Utilisateur</label>
+                <input type="text" id="username" class="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-primary" required>
+              </div>
+              <div class="mb-6">
+                <label class="block text-gray-700 mb-2">Mot de passe</label>
+                <input type="password" id="password" class="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-primary" required>
+              </div>
+              <button type="submit" id="login-btn" class="w-full bg-primary text-white p-3 rounded font-bold hover:opacity-90 transition">
+                SE CONNECTER
+              </button>
+            </form>
+          </div>
+        </div>
+       `;
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      btn.innerText = 'Connexion en cours...';
+      btn.disabled = true;
+
+      try {
+        const result = await callServer('AuthService', 'login',
+          document.getElementById('username').value,
+          document.getElementById('password').value
+        );
+        state.user = result.user;
+        state.token = result.token;
+
+        // Reload shell
+        location.reload();
+      } catch (err) {
+        alert(err.message);
+        btn.innerText = 'SE CONNECTER';
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
