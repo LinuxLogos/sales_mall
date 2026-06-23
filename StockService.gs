@@ -119,5 +119,13 @@ const StockService = {
         message: `Alerte Stock pour ${product.designation} (${sku}): ${available} disponible(s). Seuil min: ${min}.`
       });
     }
+  },
+
+  _getLowStockProducts: function() {
+    const stocks = DatabaseService.findAll('Stocks', {});
+    return stocks.filter(s => {
+      const product = ProductService.getBySku(s.SKU);
+      return product && Number(s.available_stock) <= Number(product.stock_min);
+    });
   }
 };

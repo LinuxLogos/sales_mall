@@ -23,12 +23,3 @@ const DashboardService = {
     return sales.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, limit);
   }
 };
-
-// Add helper to StockService
-StockService._getLowStockProducts = function() {
-  const stocks = DatabaseService.findAll('Stocks', {});
-  return stocks.filter(s => {
-    const product = ProductService.getBySku(s.SKU);
-    return product && Number(s.available_stock) <= Number(product.stock_min);
-  });
-};
