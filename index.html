@@ -2496,29 +2496,17 @@ function showForgotPassword() {
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', function() {
+  // Use pre-loaded data to speed up initial render
+  const initial = JSON.parse('<?!= initialData ?>');
+  APP_STATE.config = initial.config;
+
   const savedToken = sessionStorage.getItem('wms_token');
   const savedUser = sessionStorage.getItem('wms_user');
 
   if (savedToken && savedUser) {
     APP_STATE.token = savedToken;
     APP_STATE.user = JSON.parse(savedUser);
-
-    google.script.run
-      .withSuccessHandler(result => {
-        if (result.valid) {
-          APP_STATE.permissions = result.permissions;
-          APP_STATE.config = result.config;
-          showApp();
-        } else {
-          sessionStorage.removeItem('wms_token');
-          sessionStorage.removeItem('wms_user');
-        }
-      })
-      .withFailureHandler(() => {
-        sessionStorage.removeItem('wms_token');
-        sessionStorage.removeItem('wms_user');
-      })
-      .validateSession(savedToken);
+    showApp(); // Fast path
   }
 
   // Handle window resize
