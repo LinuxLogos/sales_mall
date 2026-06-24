@@ -4,69 +4,41 @@
 
 function getProductCatalog(token) {
   Security.verify(token, 'Vente', 'READ');
-  const products = DB.getRows('Products');
-  const stocks = DB.getRows('Stock');
+  const prods = DB.getRows('Products'), stocks = DB.getRows('Stock');
+  const stockMap = stocks.reduce((acc, s) => (acc[s.SKU] = (acc[s.SKU] || 0) + (s.StockPhysique - s.StockReserve), acc), {});
 
-  const stockMap = stocks.reduce((acc, s) => {
-    acc[s.SKU] = (acc[s.SKU] || 0) + (Number(s.StockPhysique) - Number(s.StockReserve));
-    return acc;
-  }, {});
-
-  return products.map(p => ({
-    ...p,
-    StockDisponible: stockMap[p.SKU] || 0
-  }));
+  return prods.map(p => ({ ...p, StockDisponible: stockMap[p.SKU] || 0 }));
 }
 
 function createSale(token, data) {
-  const session = Security.verify(token, 'Vente', 'WRITE');
+  const sess = Security.verify(token, 'Vente', 'WRITE');
   return DB.lock(() => {
-    const ticketNum = generateTicketNumber(data.Site_ID, data.Caisse_ID);
-    const now = new Date();
+    const ticket = generateTicketNumber(data.Site_ID, data.Caisse_ID);
     let totalHT = 0, totalTVA = 0;
 
-    data.Items.forEach((item, i) => {
-      const subHT = item.UnitPrice * item.Quantity;
-      const subTVA = subHT * (item.TVA_Rate || CONFIG.TVA);
-      totalHT += subHT; totalTVA += subTVA;
+    data.Items.forEach((it, i) => {
+      const lineHT = it.UnitPrice * it.Quantity, lineTVA = lineHT * (it.TVA_Rate || CONFIG.TVA);
+      totalHT += lineHT; totalTVA += lineTVA;
 
-      DB.insert('SaleItems', {
-        TicketNumber: ticketNum,
-        LineNumber: i + 1,
-        SKU: item.SKU,
-        Designation: item.Designation,
-        Quantity: item.Quantity,
-        UnitPrice: item.UnitPrice,
-        TVA_Rate: item.TVA_Rate,
-        TotalHT: subHT,
-        TotalTTC: subHT + subTVA
-      });
-
-      updateStock(item.SKU, -item.Quantity, data.Site_ID);
+      DB.insert('SaleItems', { TicketNumber: ticket, LineNumber: i+1, SKU: it.SKU, Designation: it.Designation, Quantity: it.Quantity, UnitPrice: it.UnitPrice, TotalTTC: lineHT + lineTVA });
+      updateStockDirect(it.SKU, -it.Quantity, data.Site_ID);
     });
 
-    const client = data.Client_Details ? JSON.stringify(data.Client_Details) : '[]';
-    DB.insert('Sales', {
-      TicketNumber: ticketNum,
-      Timestamp: now,
-      UserID: session.Email,
-      Client_ID: data.Client_ID || 'MANUAL',
-      Site_ID: data.Site_ID,
-      Caisse_ID: data.Caisse_ID,
-      TotalHT: totalHT,
-      TotalTVA: totalTVA,
-      TotalTTC: totalHT + totalTVA,
-      PaymentMethod: data.PaymentMethod,
-      Status: 'VALIDE',
-      Client_Details: client
-    });
+    DB.insert('Sales', { TicketNumber: ticket, Timestamp: new Date(), UserID: sess.Email, TotalTTC: totalHT + totalTVA, Client_Details: JSON.stringify(data.Client_Details) });
+    audit('SALE', 'POS', `Vente ${ticket}`, token);
 
-    audit('SALE', 'POS', `Ticket ${ticketNum} - ${totalHT + totalTVA} ${CONFIG.CURRENCY}`, token);
-
-    // In-memory PDF for speed
-    const pdf = generateInvoicePDF(token, ticketNum);
-    return { success: true, ticketNumber: ticketNum, pdfContent: pdf.htmlContent };
+    return { success: true, ticket, pdf: generateInvoiceHTML(ticket) };
   });
+}
+
+function updateStockDirect(sku, varQty, site) {
+  const s = DB.sheet('Stock'), d = s.getDataRange().getValues(), h = d[0], sIdx = h.indexOf('SKU'), siIdx = h.indexOf('Site_ID'), pIdx = h.indexOf('StockPhysique');
+  for (let i = 1; i < d.length; i++) {
+    if (d[i][sIdx] === sku && d[i][siIdx] === site) {
+      s.getRange(i+1, pIdx+1).setValue(Number(d[i][pIdx]) + varQty);
+      return;
+    }
+  }
 }
 
 function generateTicketNumber(site, caisse) {

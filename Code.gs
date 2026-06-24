@@ -1,57 +1,51 @@
 /**
  * WMS - Warehouse Management System
- * Core Configuration & Unified Services
+ * Core Service: Unified API Gateway & Initialization
  */
 
 const CONFIG = {
   APP: 'WMS ERP',
-  VERSION: '1.2.0',
+  VERSION: '2.0.0',
+  TIMEOUT: 15 * 60 * 1000,
   TVA: 0.18,
-  TIMEOUT: 15 * 60 * 1000, // 15 mins
-  MAX_ATTEMPTS: 3,
-  THEME: { primary: '#1A312C', danger: '#8B0000', success: '#1A312C' }
+  COLORS: { primary: '#1A312C', danger: '#8B0000' }
 };
 
 /**
- * High-Performance DB Service
+ * High-Performance DB Manager
  */
 const DB = {
-  _ss: null,
+  _cache: {},
   get ss() { return this._ss || (this._ss = SpreadsheetApp.getActiveSpreadsheet()); },
+  sheet(n) { return this.ss.getSheetByName(n) || this.ss.insertSheet(n); },
 
-  sheet(name) {
-    const s = this.ss.getSheetByName(name);
-    if (!s) throw new Error(`Sheet ${name} missing`);
-    return s;
-  },
-
-  getRows(sheetName) {
-    const data = this.sheet(sheetName).getDataRange().getValues();
+  getRows(n) {
+    if (this._cache[n]) return this._cache[n];
+    const data = this.sheet(n).getDataRange().getValues();
     const headers = data.shift();
-    return data.map(row => headers.reduce((acc, h, i) => (acc[h] = row[i], acc), {}));
+    return (this._cache[n] = data.map(r => headers.reduce((acc, h, i) => (acc[h] = r[i], acc), {})));
   },
 
-  insert(sheetName, data) {
+  insert(n, data) {
     return this.lock(() => {
-      const s = this.sheet(sheetName);
+      const s = this.sheet(n);
       const headers = s.getRange(1, 1, 1, s.getLastColumn()).getValues()[0];
       s.appendRow(headers.map(h => data[h] ?? ''));
+      delete this._cache[n];
       return true;
     });
   },
 
-  update(sheetName, key, val, updates) {
+  update(n, key, val, updates) {
     return this.lock(() => {
-      const s = this.sheet(sheetName);
-      const data = s.getDataRange().getValues();
-      const headers = data[0];
-      const kIdx = headers.indexOf(key);
-      for (let i = 1; i < data.length; i++) {
-        if (data[i][kIdx] == val) {
+      const s = this.sheet(n), d = s.getDataRange().getValues(), h = d[0], kIdx = h.indexOf(key);
+      for (let i = 1; i < d.length; i++) {
+        if (d[i][kIdx] == val) {
           for (let k in updates) {
-            const col = headers.indexOf(k);
-            if (col > -1) s.getRange(i + 1, col + 1).setValue(updates[k]);
+            const cIdx = h.indexOf(k);
+            if (cIdx > -1) s.getRange(i + 1, cIdx + 1).setValue(updates[k]);
           }
+          delete this._cache[n];
           return true;
         }
       }
@@ -61,75 +55,52 @@ const DB = {
 
   lock(fn) {
     const l = LockService.getScriptLock();
-    try {
-      l.waitLock(10000);
-      return fn();
-    } finally { l.releaseLock(); }
+    try { l.waitLock(10000); return fn(); } finally { l.releaseLock(); }
   }
 };
 
 /**
- * Security & Session Gateway
+ * Unified Security Gateway
  */
 const Security = {
-  verify(token, module, level = 'READ') {
-    const session = this.getSession(token);
-    if (!session) throw new Error('AUTH_EXPIRED');
+  verify(token, mod, level = 'READ') {
+    const session = DB.getRows('Sessions').find(s => s.Token === token);
+    if (!session || (new Date() - new Date(session.LastActivity) > CONFIG.TIMEOUT)) throw new Error('AUTH_EXPIRED');
 
-    const perms = this.getPerms(session.role);
-    const mPerm = perms[`Module_${module}`] || 'NONE';
+    const perm = (DB.getRows('Permissions').find(p => p.Role === session.Role) || {})[`Module_${mod}`] || 'NONE';
+    const lvls = { NONE: 0, READ: 1, WRITE: 2, FULL: 3 };
+    if (lvls[perm] < lvls[level]) throw new Error('PERMISSION_DENIED');
 
-    const levels = { 'NONE': 0, 'READ': 1, 'WRITE': 2, 'FULL': 3 };
-    if (levels[mPerm] < levels[level]) throw new Error('PERMISSION_DENIED');
-
-    return session;
-  },
-
-  getSession(token) {
-    const sessions = DB.getRows('Sessions');
-    const s = sessions.find(s => s.Token === token);
-    if (!s || (new Date() - new Date(s.LastActivity) > CONFIG.TIMEOUT)) return null;
     DB.update('Sessions', 'Token', token, { LastActivity: new Date() });
-    return s;
-  },
-
-  getPerms(role) {
-    return DB.getRows('Permissions').find(p => p.Role === role) || {};
+    return session;
   }
 };
 
 function doGet() {
   const t = HtmlService.createTemplateFromFile('index');
-  // Pre-load basic system data to minimize initial latency
-  const config = getClientConfig();
-  t.initialData = JSON.stringify({
-    config,
-    version: CONFIG.VERSION,
-    appName: CONFIG.APP
+  const cfg = {}; DB.getRows('Config').forEach(r => cfg[r.Clé] = r.Valeur);
+
+  // Pre-load essential data for <1s perceived load time
+  t.init = JSON.stringify({
+    app: CONFIG.APP,
+    company: cfg.COMPANY_NAME || CONFIG.APP,
+    currency: cfg.CURRENCY || 'XOF',
+    version: CONFIG.VERSION
   });
+
   return t.evaluate()
-    .setTitle(config.name || CONFIG.APP)
+    .setTitle(CONFIG.APP)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function audit(action, mod, desc, token = null) {
+  const user = token ? DB.getRows('Sessions').find(s => s.Token === token)?.Email : 'SYSTEM';
+  DB.insert('Audit', { Timestamp: new Date(), UserID: user || 'GUEST', Action: action, Module: mod, Description: desc });
 }
 
 function getClientConfig() {
   const cfg = {};
   DB.getRows('Config').forEach(r => cfg[r.Clé] = r.Valeur);
-  return {
-    name: cfg.COMPANY_NAME || CONFIG.APP,
-    tva: parseFloat(cfg.TVA_RATE || CONFIG.TVA),
-    currency: cfg.CURRENCY || 'XOF'
-  };
-}
-
-function audit(action, module, desc, token = null) {
-  const user = token ? Security.getSession(token)?.Email : 'SYSTEM';
-  DB.insert('Audit', {
-    Timestamp: new Date(),
-    UserID: user || 'GUEST',
-    Action: action,
-    Module: module,
-    Description: desc
-  });
+  return { name: cfg.COMPANY_NAME, tva: parseFloat(cfg.TVA_RATE || CONFIG.TVA), currency: cfg.CURRENCY || 'XOF' };
 }
