@@ -48,7 +48,7 @@ function initializeSystem() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const requiredSheets = [
     'Config', 'Users', 'Sessions', 'Permissions', 'Roles',
-    'Products', 'Stock', 'StockMovements', 'Lots',
+    'Products', 'Stock', 'StockMovements', 'Lots', 'Categories',
     'Sales', 'SaleItems', 'Clients', 'SpecialClients',
     'Promotions', 'Suppliers', 'Transfers',
     'Journal', 'Audit'
@@ -83,8 +83,9 @@ function initializeSheet(sheetName, sheet) {
     'Promotions': ['Promo_ID', 'SKU', 'Reduction_Percent', 'Reduction_Amount', 'ValidFrom', 'ValidTo', 'IsActive', 'Priority'],
     'Suppliers': ['Supplier_ID', 'Name', 'Contact', 'Phone', 'Email', 'Address', 'City', 'Country', 'NIF', 'PaymentTerms', 'IsActive'],
     'Transfers': ['Transfer_ID', 'Timestamp', 'From_Site', 'To_Site', 'UserID', 'Status', 'Items_JSON', 'ValidatedBy', 'ValidatedAt'],
+    'Categories': ['ID', 'Nom', 'Description', 'CreatedAt'],
     'Journal': ['Timestamp', 'UserID', 'Type_Mouvement', 'SKU', 'Variation', 'Solde_Apres_Operation', 'Reference_Ticket', 'Lot_ID', 'DateExpiration', 'Hash'],
-    'Audit': ['Timestamp', 'UserID', 'Action', 'Module', 'OldData', 'NewData', 'IPAddress', 'UserAgent']
+    'Audit': ['Timestamp', 'UserID', 'Action', 'Module', 'Description', 'OldData', 'NewData', 'IPAddress', 'UserAgent']
   };
 
   if (headers[sheetName]) {

@@ -39,7 +39,9 @@ function getDashboardData(token) {
     }
 
     // Process stock
+    const uniqueSKUs = new Set();
     for (let i = 1; i < stockData.length; i++) {
+      uniqueSKUs.add(stockData[i][0]);
       const physique = stockData[i][5] || 0;
       const reserve = stockData[i][6] || 0;
       const disponible = physique - reserve;
@@ -59,14 +61,25 @@ function getDashboardData(token) {
       last7Days.push({ day: dayName, date: dateStr, total: salesByDay[dateStr] || 0 });
     }
 
+    // Recent activity (from Audit sheet)
+    const auditSheet = ss.getSheetByName('Audit');
+    const auditData = auditSheet ? auditSheet.getRange(Math.max(1, auditSheet.getLastRow() - 9), 1, Math.min(10, auditSheet.getLastRow()), auditSheet.getLastColumn()).getValues() : [];
+    const activities = auditData.slice(1).map(row => ({
+      time: row[0],
+      user: row[1],
+      action: row[2],
+      desc: row[4]
+    })).reverse();
+
     return {
       success: true,
       dailySales: dailySales,
       dailyTransactions: dailyTransactions,
-      totalStock: totalArticles,
+      totalStock: uniqueSKUs.size, // Number of different types of articles
       stockAlerts: stockAlerts,
       last7Days: last7Days,
-      totalProducts: productsData.length - 1
+      totalProducts: productsData.length - 1,
+      recentActivity: activities
     };
   } catch (error) {
     return { success: false, error: error.message };
@@ -297,6 +310,12 @@ function generateInvoicePDF(token, ticketNumber) {
     const sale = saleDetails.sale;
     const items = saleDetails.items;
     const company = getClientConfig().company;
+    let clientInfo = { Nom: 'Client Comptoir', Phone: '', Address: '' };
+    try {
+       if (sale.Client_Details) {
+         clientInfo = JSON.parse(sale.Client_Details);
+       }
+    } catch(e) {}
 
     let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
       body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #000; }
@@ -321,6 +340,12 @@ function generateInvoicePDF(token, ticketNumber) {
       <div class="invoice-info">
         <h2>FACTURE</h2>
         <p><strong>N°:</strong> ${sale.TicketNumber}<br><strong>Date:</strong> ${new Date(sale.Timestamp).toLocaleDateString('fr-FR')}<br><strong>Heure:</strong> ${new Date(sale.Timestamp).toLocaleTimeString('fr-FR')}</p>
+        <div style="margin-top:10px;text-align:right;">
+          <strong>Client:</strong><br>
+          ${clientInfo.Nom}<br>
+          ${clientInfo.Phone}<br>
+          ${clientInfo.Address}
+        </div>
       </div>
     </div>
     <table>

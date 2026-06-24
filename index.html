@@ -1378,8 +1378,16 @@ tbody tr:nth-child(even):hover {
           <h2>Gestion du Stock</h2>
           <div class="section-actions">
             <button class="btn btn-primary" onclick="showAddProductModal()">➕ Ajouter Produit</button>
-            <button class="btn btn-secondary" onclick="exportStockCSV()">📥 Export CSV</button>
+            <button class="btn btn-secondary" onclick="exportStockPDF()">📄 Export PDF</button>
+            <button class="btn btn-secondary" onclick="showImportCSVModal()">📥 Import CSV</button>
           </div>
+        </div>
+        <div class="form-card" style="margin-bottom:1.5rem;padding:1rem;">
+           <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+              <div class="form-group"><label>SKU/Barcode</label><input type="text" id="filter-stock-sku" oninput="applyStockFilters()"></div>
+              <div class="form-group"><label>Warehouse</label><input type="text" id="filter-stock-site" oninput="applyStockFilters()"></div>
+              <div class="form-group"><label>Catégorie</label><select id="filter-stock-cat" onchange="applyStockFilters()"><option value="">Toutes</option></select></div>
+           </div>
         </div>
         <div class="table-card">
           <div class="table-container">
@@ -1397,7 +1405,14 @@ tbody tr:nth-child(even):hover {
           <h2>Catalogue Produits</h2>
           <div class="section-actions">
             <button class="btn btn-primary" onclick="showAddProductModal()">➕ Nouveau Produit</button>
+            <button class="btn btn-secondary" onclick="showCategoryModal()">📁 Catégories</button>
           </div>
+        </div>
+        <div class="form-card" style="margin-bottom:1.5rem;padding:1rem;">
+           <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+              <div class="form-group"><label>Recherche</label><input type="text" id="filter-prod-query" oninput="applyProductFilters()"></div>
+              <div class="form-group"><label>Catégorie</label><select id="filter-prod-cat" onchange="applyProductFilters()"><option value="">Toutes</option></select></div>
+           </div>
         </div>
         <div class="table-card">
           <div class="table-container">
@@ -1558,13 +1573,71 @@ tbody tr:nth-child(even):hover {
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-categories">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span class="modal-title">📁 Gestion des Catégories</span>
+      <button class="modal-close" onclick="closeModal('modal-categories')">&times;</button>
+    </div>
+    <div class="form-group"><label>Nom de la catégorie</label><input type="text" id="cat-name"></div>
+    <div class="form-group"><label>Description</label><input type="text" id="cat-desc"></div>
+    <button class="btn btn-primary" onclick="saveCategory()">💾 Ajouter</button>
+    <div style="margin-top:1.5rem;">
+      <h4 class="mb-2">Existantes:</h4>
+      <ul id="categories-list" class="space-y-1"></ul>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-import-csv">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span class="modal-title">📥 Import CSV Produits</span>
+      <button class="modal-close" onclick="closeModal('modal-import-csv')">&times;</button>
+    </div>
+    <div class="form-group"><label>Fichier CSV</label><input type="file" id="csv-file" accept=".csv"></div>
+    <p class="text-xs text-gray-500 mb-4">Format: SKU,Barcode,Designation,Category,PurchasePrice,SalePrice...</p>
+    <button class="btn btn-primary" onclick="processCSVImport()">🚀 Importer</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-client">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span class="modal-title">➕ Nouveau Client</span>
+      <button class="modal-close" onclick="closeModal('modal-add-client')">&times;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full-width"><label>Nom complet *</label><input type="text" id="cli-name"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="cli-email"></div>
+      <div class="form-group"><label>Téléphone</label><input type="text" id="cli-phone"></div>
+      <div class="form-group full-width"><label>Adresse</label><input type="text" id="cli-address"></div>
+      <div class="form-group"><label>Ville</label><input type="text" id="cli-city"></div>
+      <div class="form-group"><label>Pays</label><input type="text" id="cli-country"></div>
+      <div class="form-group"><label>NIF</label><input type="text" id="cli-nif"></div>
+      <div class="form-group"><label>Type</label><select id="cli-type"><option>Regular</option><option>VIP</option><option>Business</option></select></div>
+    </div>
+    <button class="btn btn-primary mt-4" onclick="saveClient()">💾 Enregistrer</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-checkout">
   <div class="modal-content">
     <div class="modal-header">
       <span class="modal-title">💳 Finaliser la Vente</span>
       <button class="modal-close" onclick="closeModal('modal-checkout')">&times;</button>
     </div>
-    <div class="form-group"><label>Client (optionnel)</label><select id="checkout-client"><option value="">Client comptoir</option></select></div>
+    <div class="form-group">
+      <label>Client</label>
+      <select id="checkout-client" onchange="toggleClientManualInfo(this.value)">
+        <option value="MANUAL">Saisie Manuelle</option>
+      </select>
+    </div>
+    <div id="manual-client-info" style="border:1px solid var(--border);padding:1rem;border-radius:0.75rem;margin-bottom:1rem;display:block;">
+      <div class="form-group"><label>Nom Client</label><input type="text" id="checkout-client-name"></div>
+      <div class="form-group"><label>Téléphone</label><input type="text" id="checkout-client-phone"></div>
+      <div class="form-group"><label>Adresse</label><input type="text" id="checkout-client-address"></div>
+    </div>
     <div class="form-group"><label>Site/Magasin</label><input type="text" id="checkout-site" value="MAIN"></div>
     <div class="form-group"><label>Caisse</label><input type="text" id="checkout-caisse" value="C01"></div>
     <div class="form-group"><label>Mode de paiement</label><select id="checkout-payment"><option>ESPECE</option><option>CARTE</option><option>MOBILE</option></select></div>
@@ -1723,7 +1796,7 @@ function showView(viewId) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (viewId === 'dashboard') loadDashboard();
-  if (viewId === 'pos') loadPOSProducts();
+  if (viewId === 'pos') { loadPOSProducts(); loadCheckoutClients(); }
   if (viewId === 'stock') loadStock();
   if (viewId === 'products') loadProducts();
   if (viewId === 'clients') loadClients();
@@ -1754,6 +1827,16 @@ function loadDashboard() {
             <div style="font-size:0.75rem;color:var(--text-secondary);">${d.day}</div>
           </div>`;
         }).join('');
+
+        // Recent activity
+        const activityList = document.getElementById('recent-activity');
+        activityList.innerHTML = data.recentActivity.map(a => `
+          <tr>
+            <td>${new Date(a.time).toLocaleTimeString('fr-FR')}</td>
+            <td><strong>${a.action}</strong></td>
+            <td>${a.desc || ''}</td>
+          </tr>
+        `).join('');
       }
     })
     .withFailureHandler(err => showToast('Erreur: ' + err.message, 'error'))
@@ -1890,20 +1973,43 @@ function checkout() {
   openModal('modal-checkout');
 }
 
+function toggleClientManualInfo(val) {
+  document.getElementById('manual-client-info').style.display = (val === 'MANUAL') ? 'block' : 'none';
+}
+
 function confirmCheckout() {
+  const clientSelection = document.getElementById('checkout-client').value;
   const saleData = {
     Items: APP_STATE.cart,
     Site_ID: document.getElementById('checkout-site').value,
     Caisse_ID: document.getElementById('checkout-caisse').value,
     PaymentMethod: document.getElementById('checkout-payment').value,
-    Client_ID: document.getElementById('checkout-client').value
+    Client_ID: clientSelection === 'MANUAL' ? '' : clientSelection,
+    Client_Details: clientSelection === 'MANUAL' ? {
+      Nom: document.getElementById('checkout-client-name').value,
+      Phone: document.getElementById('checkout-client-phone').value,
+      Address: document.getElementById('checkout-client-address').value
+    } : null
   };
+
+  showToast('Enregistrement de la vente...', 'success');
 
   google.script.run
     .withSuccessHandler(result => {
       closeModal('modal-checkout');
       if (result.success) {
         showToast(`✅ Vente enregistrée: ${result.ticketNumber}`, 'success');
+
+        // Automatic PDF Download
+        if (result.pdfContent) {
+           const blob = new Blob([result.pdfContent], { type: 'text/html' }); // We're using HTML-based PDF mock for now
+           const url = URL.createObjectURL(blob);
+           const link = document.createElement('a');
+           link.href = 'data:text/html;base64,' + btoa(result.pdfContent);
+           link.download = `Facture_${result.ticketNumber}.html`;
+           link.click();
+        }
+
         APP_STATE.cart = [];
         renderCart();
         loadPOSProducts();
@@ -2020,7 +2126,41 @@ function loadClients() {
 }
 
 function showAddClientModal() {
-  showToast('Fonctionnalité en développement', 'warning');
+  openModal('modal-add-client');
+}
+
+function saveClient() {
+  const data = {
+    Nom: document.getElementById('cli-name').value,
+    Email: document.getElementById('cli-email').value,
+    Phone: document.getElementById('cli-phone').value,
+    Address: document.getElementById('cli-address').value,
+    City: document.getElementById('cli-city').value,
+    Country: document.getElementById('cli-country').value,
+    NIF: document.getElementById('cli-nif').value,
+    Type: document.getElementById('cli-type').value
+  };
+  if (!data.Nom) return showToast('Nom requis', 'warning');
+
+  google.script.run.withSuccessHandler(res => {
+    if (res.success) {
+      showToast('Client enregistré');
+      closeModal('modal-add-client');
+      loadClients();
+      loadCheckoutClients(); // Update POS select
+    }
+  }).createClient(APP_STATE.token, data);
+}
+
+function loadCheckoutClients() {
+   google.script.run.withSuccessHandler(res => {
+      const select = document.getElementById('checkout-client');
+      let options = '<option value="MANUAL">Saisie Manuelle</option>';
+      res.forEach(c => {
+         options += `<option value="${c.id}">${c.nom} (${c.phone || ''})</option>`;
+      });
+      select.innerHTML = options;
+   }).listClients(APP_STATE.token);
 }
 
 function showSpecialClientsModal() {
@@ -2049,8 +2189,124 @@ function generateReport(type) {
     .exportToCSV(APP_STATE.token, type, {});
 }
 
-function exportStockCSV() {
-  generateReport('stock');
+function applyStockFilters() {
+  const sku = document.getElementById('filter-stock-sku').value.toLowerCase();
+  const site = document.getElementById('filter-stock-site').value.toLowerCase();
+  const cat = document.getElementById('filter-stock-cat').value;
+
+  google.script.run
+    .withSuccessHandler(data => {
+       if (data.success) {
+          const tbody = document.getElementById('stock-table-body');
+          const filtered = data.stock.filter(item =>
+             (item.SKU.toLowerCase().includes(sku) || (item.Designation && item.Designation.toLowerCase().includes(sku))) &&
+             (item.Site_ID.toLowerCase().includes(site)) &&
+             (!cat || item.Categorie === cat)
+          );
+          renderStockRows(filtered);
+       }
+    })
+    .getStockOverview(APP_STATE.token);
+}
+
+function renderStockRows(items) {
+  const tbody = document.getElementById('stock-table-body');
+  tbody.innerHTML = items.map(item => {
+    let statusBadge = '<span class="badge badge-success">✅ En Stock</span>';
+    if (item.StockDisponible <= 0) statusBadge = '<span class="badge badge-danger">❌ Rupture</span>';
+    else if (item.StockDisponible <= 10) statusBadge = '<span class="badge badge-warning">⚠️ Faible</span>';
+
+    return `<tr>
+      <td><strong>${item.SKU}</strong></td>
+      <td>${item.Designation}</td>
+      <td>${item.Location}</td>
+      <td>${item.StockPhysique}</td>
+      <td>${item.StockReserve}</td>
+      <td><strong>${item.StockDisponible}</strong></td>
+      <td>${statusBadge}</td>
+      <td><button class="btn btn-secondary" style="padding:0.5rem 1rem;font-size:0.8rem;" onclick="showStockMovementModal('${item.SKU}')">📝 Mouvement</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function showCategoryModal() {
+  loadCategories();
+  openModal('modal-categories');
+}
+
+function loadCategories() {
+  google.script.run.withSuccessHandler(cats => {
+    const list = document.getElementById('categories-list');
+    list.innerHTML = cats.map(c => `<li class="p-2 bg-gray-100 rounded flex justify-between"><span>${c.nom}</span> <small class="text-gray-500">${c.id}</small></li>`).join('');
+
+    // Update filter selects
+    const filterStock = document.getElementById('filter-stock-cat');
+    const filterProd = document.getElementById('filter-prod-cat');
+    const prodCat = document.getElementById('prod-category');
+
+    const options = '<option value="">Toutes</option>' + cats.map(c => `<option value="${c.nom}">${c.nom}</option>`).join('');
+    if (filterStock) filterStock.innerHTML = options;
+    if (filterProd) filterProd.innerHTML = options;
+    if (prodCat) prodCat.innerHTML = cats.map(c => `<option value="${c.nom}">${c.nom}</option>`).join('');
+
+  }).getCategories(APP_STATE.token);
+}
+
+function saveCategory() {
+  const data = {
+    Nom: document.getElementById('cat-name').value,
+    Description: document.getElementById('cat-desc').value
+  };
+  if (!data.Nom) return showToast('Nom requis', 'warning');
+
+  google.script.run.withSuccessHandler(res => {
+    if (res.success) {
+      showToast('Catégorie ajoutée');
+      document.getElementById('cat-name').value = '';
+      document.getElementById('cat-desc').value = '';
+      loadCategories();
+    }
+  }).createCategory(APP_STATE.token, data);
+}
+
+function exportStockPDF() {
+  showToast('Génération PDF en cours...', 'success');
+  // Mock PDF Export using window.print style or similar
+  window.print();
+}
+
+function showImportCSVModal() {
+  openModal('modal-import-csv');
+}
+
+function processCSVImport() {
+  const file = document.getElementById('csv-file').files[0];
+  if (!file) return showToast('Fichier requis', 'warning');
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const lines = text.split('\n');
+    const products = [];
+    // Skip header and process
+    for(let i = 1; i < lines.length; i++) {
+       const cols = lines[i].split(',');
+       if (cols.length >= 6) {
+          products.push({
+            SKU: cols[0], CodeBarres: cols[1], Designation: cols[2],
+            Categorie: cols[3], PrixAchat: parseFloat(cols[4]), PrixVente: parseFloat(cols[5])
+          });
+       }
+    }
+    google.script.run.withSuccessHandler(res => {
+       if (res.success) {
+         showToast(`${res.imported} produits importés`);
+         closeModal('modal-import-csv');
+         loadProducts();
+       }
+    }).importProducts(APP_STATE.token, products);
+  };
+  reader.readAsText(file);
 }
 
 // ==================== ACCOUNTING ====================

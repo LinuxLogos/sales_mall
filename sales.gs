@@ -85,11 +85,19 @@ function createSale(token, saleData) {
 
       const now = new Date();
       const ticketNumber = generateTicketNumber(saleData.Site_ID, saleData.Caisse_ID);
+      const currentUser = getCurrentUserFromToken(token);
 
       let clientTVA = parseFloat(getConfigValue('TVA_RATE', '0.18'));
       let clientReduction = 0;
+      let clientInfo = saleData.Client_Details || {}; // {Nom, Phone, Address}
 
       if (saleData.Client_ID) {
+        const client = getClientById(saleData.Client_ID);
+        if (client) {
+          clientInfo.Nom = client.Nom;
+          clientInfo.Phone = client.Phone;
+          clientInfo.Address = client.Address;
+        }
         const specialClient = getSpecialClient(saleData.Client_ID);
         if (specialClient) {
           clientTVA = specialClient.TVA_Rate || clientTVA;
@@ -99,7 +107,6 @@ function createSale(token, saleData) {
 
       let totalHT = 0, totalTVA = 0, totalTTC = 0;
       const itemsData = [];
-      const currentUser = getCurrentUserFromToken(token);
 
       saleData.Items.forEach((item, index) => {
         const currentStock = getAvailableStock(item.SKU, saleData.Site_ID);
@@ -133,7 +140,10 @@ function createSale(token, saleData) {
         reductionAmount = reduction;
       }
 
-      salesSheet.appendRow([ticketNumber, now, currentUser, saleData.Client_ID || '', saleData.Site_ID, saleData.Caisse_ID, totalHT, totalTVA, totalTTC, saleData.PaymentMethod || 'ESPECE', 'PAYE', 'VALIDE', reductionAmount, reductionPercent]);
+      // Store Client Info JSON in Sales sheet for persistence if manual
+      const clientDetailsJson = JSON.stringify(clientInfo);
+
+      salesSheet.appendRow([ticketNumber, now, currentUser, saleData.Client_ID || 'MANUAL', saleData.Site_ID, saleData.Caisse_ID, totalHT, totalTVA, totalTTC, saleData.PaymentMethod || 'ESPECE', 'PAYE', 'VALIDE', reductionAmount, reductionPercent, clientDetailsJson]);
 
       if (itemsData.length > 0) {
         const range = saleItemsSheet.getRange(saleItemsSheet.getLastRow() + 1, 1, itemsData.length, itemsData[0].length);
@@ -141,9 +151,20 @@ function createSale(token, saleData) {
       }
 
       invalidateCache('PRODUCT_CATALOG');
-      auditLog('SALE_CREATED', 'Vente', 'Sale: ' + ticketNumber, { total: totalTTC }, token);
+      auditLog('SALE_CREATED', 'Vente', 'Vente effectuée: ' + ticketNumber, { newData: { ticketNumber, total: totalTTC, client: clientInfo } }, token);
 
-      return { success: true, ticketNumber: ticketNumber, totalHT: totalHT, totalTVA: totalTVA, totalTTC: totalTTC, timestamp: now };
+      // Generate PDF Data for immediate return
+      const pdfResult = generateInvoicePDF(token, ticketNumber);
+
+      return {
+        success: true,
+        ticketNumber: ticketNumber,
+        totalHT: totalHT,
+        totalTVA: totalTVA,
+        totalTTC: totalTTC,
+        timestamp: now,
+        pdfContent: pdfResult.success ? pdfResult.htmlContent : null
+      };
     });
   } catch (error) {
     Logger.log('ERROR in createSale: ' + error.message);
@@ -185,6 +206,50 @@ function updateStock(sku, variation, siteID, lotID = null) {
   }
 }
 
+function listClients(token) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Clients');
+    if (!sheet) return [];
+    const data = sheet.getDataRange().getValues();
+    const clients = [];
+    for (let i = 1; i < data.length; i++) {
+      clients.push({ id: data[i][0], nom: data[i][1], phone: data[i][3] });
+    }
+    return clients;
+  } catch (error) {
+    return [];
+  }
+}
+
+function getClientById(id) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Clients');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === id) {
+      const client = {};
+      data[0].forEach((h, idx) => client[h] = data[i][idx]);
+      return client;
+    }
+  }
+  return null;
+}
+
+function createClient(token, clientData) {
+  try {
+    if (!checkPermission(token, 'Clients', 'WRITE')) throw new Error('Accès refusé');
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Clients');
+    const id = 'CLI-' + Date.now();
+    sheet.appendRow([id, clientData.Nom, clientData.Email, clientData.Phone, clientData.Address, clientData.City, clientData.Country, clientData.NIF || '', clientData.Type || 'Regular', new Date(), true]);
+    auditLog('CLIENT_CREATED', 'Clients', 'Client créé: ' + clientData.Nom, { newData: clientData }, token);
+    return { success: true, id: id };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 function getSpecialClient(clientID) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('SpecialClients');
@@ -203,6 +268,19 @@ function getSpecialClient(clientID) {
     }
   }
   return null;
+}
+
+function createSpecialClient(token, specialData) {
+  try {
+    if (!checkPermission(token, 'Clients', 'WRITE')) throw new Error('Accès refusé');
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('SpecialClients');
+    sheet.appendRow([specialData.Client_ID, specialData.TVA_Rate, specialData.Reduction_Percent, specialData.Reduction_Amount, specialData.ValidFrom || '', specialData.ValidTo || '', true, specialData.Notes || '']);
+    auditLog('SPECIAL_CLIENT_CREATED', 'Clients', 'Client spécial créé: ' + specialData.Client_ID, { newData: specialData }, token);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
 }
 
 function getSalesHistory(token, filters = {}) {

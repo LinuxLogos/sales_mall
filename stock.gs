@@ -2,7 +2,7 @@
  * Stock Management Module
  */
 
-function getStockOverview(token) {
+function getStockOverview(token, filters = {}) {
   try {
     if (!checkPermission(token, 'Stock', 'READ')) throw new Error('Accès refusé');
 
@@ -24,6 +24,12 @@ function getStockOverview(token) {
     for (let i = 1; i < stockData.length; i++) {
       const sku = stockData[i][0];
       const product = productMap.get(sku) || {};
+      const siteId = stockData[i][1];
+
+      if (filters.sku && sku !== filters.sku) continue;
+      if (filters.siteId && siteId !== filters.siteId) continue;
+      if (filters.category && product.Categorie !== filters.category) continue;
+
       const physique = stockData[i][5] || 0;
       const reserve = stockData[i][6] || 0;
       const disponible = physique - reserve;
@@ -33,7 +39,7 @@ function getStockOverview(token) {
         SKU: sku,
         Designation: product.Designation || sku,
         Categorie: product.Categorie || '',
-        Site_ID: stockData[i][1],
+        Site_ID: siteId,
         Location: `${stockData[i][2]}-${stockData[i][3]}-${stockData[i][4]}`,
         StockPhysique: physique,
         StockReserve: reserve,
@@ -212,6 +218,36 @@ function inventoryAdjustment(token, adjustmentData) {
     });
   } catch (error) {
     return { success: false, error: error.message };
+  }
+}
+
+function createCategory(token, categoryData) {
+  try {
+    if (!checkPermission(token, 'Admin', 'WRITE')) throw new Error('Accès refusé');
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Categories');
+    const id = 'CAT-' + Date.now();
+    sheet.appendRow([id, categoryData.Nom, categoryData.Description || '', new Date()]);
+    auditLog('CATEGORY_CREATED', 'Admin', 'Catégorie créée: ' + categoryData.Nom, { newData: categoryData }, token);
+    return { success: true, id: id };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+function getCategories(token) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Categories');
+    if (!sheet) return [];
+    const data = sheet.getDataRange().getValues();
+    const categories = [];
+    for (let i = 1; i < data.length; i++) {
+      categories.push({ id: data[i][0], nom: data[i][1], description: data[i][2] });
+    }
+    return categories;
+  } catch (error) {
+    return [];
   }
 }
 
